@@ -34,10 +34,15 @@ input[type=number]{-moz-appearance:textfield}
 }
 body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;color:var(--text);padding-bottom:74px}
 
-.topbar{background:linear-gradient(135deg,#1565C0 0%,#1976D2 100%);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(21,101,192,.3)}
+.topbar{background:linear-gradient(135deg,var(--blue) 0%,var(--blue2) 100%);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(21,101,192,.3)}
 .topbar-icon{width:38px;height:38px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);font-size:20px}
 .topbar-title{font-size:18px;font-weight:800;color:#fff;flex:1;letter-spacing:.3px}
 .settings-btn{width:38px;height:38px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;backdrop-filter:blur(4px);transition:background .15s}
+.theme-btn{width:38px;height:38px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;backdrop-filter:blur(4px);transition:background .15s;position:relative}
+.theme-pop{position:absolute;top:48px;right:16px;background:#fff;border-radius:14px;padding:12px;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:200;display:none;gap:10px;flex-wrap:wrap;width:190px}
+.theme-pop.show{display:flex}
+.theme-swatch{width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid #fff;box-shadow:0 0 0 1.5px rgba(0,0,0,.15);flex-shrink:0}
+.theme-swatch.active{box-shadow:0 0 0 2.5px #333}
 .settings-btn:active{background:rgba(255,255,255,.35)}
 .settings-btn i{font-size:18px;color:#fff}
 .settings-btn.hide{display:none}
@@ -292,7 +297,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;color
 <div class="topbar">
   <div class="topbar-icon">📊</div>
   <div class="topbar-title" id="topTitle">3 Layer Costing</div>
-  <button class="settings-btn" onclick="openSettings()" id="settBtn"><i class="ti ti-settings"></i></button>
+  <button class="theme-btn" onclick="toggleThemePop(event)" id="themeBtn">🎨</button>
+  <div class="theme-pop" id="themePop"></div>
 </div>
 
 <div class="tabs">
@@ -305,13 +311,13 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;color
 
 <!-- ============ 3-LAYER COSTING ============ -->
 <div id="costing" class="app active">
-  <div class="legend">
+  <div class="legend" style="display:none">
     <div class="leg"><span class="sw sw-y"></span>User Input</div>
     <div class="leg"><span class="sw sw-o"></span>Calculated</div>
     <div class="leg"><span class="sw sw-g"></span>Auto / Internal</div>
   </div>
 
-  <div class="master-ref-bar" id="masterRefBar">
+  <div class="master-ref-bar" id="masterRefBar" style="display:none">
     <i class="ti ti-settings" style="font-size:13px;color:#1565C0"></i>
     <div class="mref-item">1PLY: <span class="mref-val" id="ref1">₹1300</span></div>
     <div class="mref-item">2PLY: <span class="mref-val" id="ref2">₹300</span></div>
@@ -700,7 +706,6 @@ function switchTab(tab){
   var idx={costing:0,pouch:1,quotation:2}[tab];
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',i===idx));
   document.getElementById('topTitle').textContent=tab==='costing'?'3 Layer Costing':tab==='pouch'?'Pouch Calculator':'Quotation Maker';
-  document.getElementById('settBtn').classList.toggle('hide',tab!=='costing');
   document.getElementById('typebar').classList.toggle('hide',tab!=='pouch');
   document.getElementById('costnav').classList.toggle('hide',tab!=='costing');
 }
@@ -1355,6 +1360,51 @@ function fmtDate(d){if(!d)return '';var p=d.split('-');if(p.length===3){var mo=[
 
 /* default date = today */
 (function(){var t=new Date(),iso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');var e=document.getElementById('q_date');if(e)e.value=iso})();
+var THEMES=[
+  {n:'Blue',c1:'#1565C0',c2:'#1976D2',c3:'#0D47A1'},
+  {n:'Yellow',c1:'#F9A825',c2:'#FBC02D',c3:'#B8860B'},
+  {n:'Red',c1:'#C62828',c2:'#E53935',c3:'#8E0000'},
+  {n:'Green',c1:'#2E7D32',c2:'#43A047',c3:'#1B5E20'},
+  {n:'Orange',c1:'#EF6C00',c2:'#FB8C00',c3:'#B84D00'},
+  {n:'Purple',c1:'#6A1B9A',c2:'#8E24AA',c3:'#4A148C'},
+  {n:'Teal',c1:'#00796B',c2:'#00897B',c3:'#004D40'},
+  {n:'Pink',c1:'#AD1457',c2:'#D81B60',c3:'#880E4F'},
+  {n:'Black',c1:'#263238',c2:'#37474F',c3:'#12181B'}
+];
+var THKEY='proCalcThemeColor_v1';
+function applyTheme(c1,c2,c3){
+  var r=document.documentElement.style;
+  r.setProperty('--blue',c1);r.setProperty('--blue2',c2);r.setProperty('--blue-dark',c3);
+}
+function saveTheme(c1,c2,c3){try{localStorage.setItem(THKEY,JSON.stringify({c1:c1,c2:c2,c3:c3}))}catch(e){}}
+function loadTheme(){
+  try{var v=localStorage.getItem(THKEY);if(v){var o=JSON.parse(v);applyTheme(o.c1,o.c2,o.c3);return o.c1}}catch(e){}
+  return null;
+}
+function renderThemePop(){
+  var cur=(function(){try{var v=localStorage.getItem(THKEY);return v?JSON.parse(v).c1:'#1565C0'}catch(e){return '#1565C0'}})();
+  var pop=document.getElementById('themePop');
+  pop.innerHTML=THEMES.map(function(t){
+    var active=t.c1.toLowerCase()===cur.toLowerCase()?' active':'';
+    return '<div class="theme-swatch'+active+'" style="background:'+t.c1+'" title="'+t.n+'" onclick="pickTheme(\''+t.c1+'\',\''+t.c2+'\',\''+t.c3+'\')"></div>';
+  }).join('');
+}
+function pickTheme(c1,c2,c3){
+  applyTheme(c1,c2,c3);saveTheme(c1,c2,c3);renderThemePop();
+  document.getElementById('themePop').classList.remove('show');
+}
+function toggleThemePop(ev){
+  if(ev)ev.stopPropagation();
+  renderThemePop();
+  document.getElementById('themePop').classList.toggle('show');
+}
+document.addEventListener('click',function(e){
+  var pop=document.getElementById('themePop'),btn=document.getElementById('themeBtn');
+  if(pop&&pop.classList.contains('show')&&!pop.contains(e.target)&&e.target!==btn&&!(btn&&btn.contains(e.target))){
+    pop.classList.remove('show');
+  }
+});
+loadTheme();
 loadSaved();loadHistory();renderQ();renderHistory();refreshQuoteNoField();
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
