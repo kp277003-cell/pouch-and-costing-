@@ -1227,8 +1227,10 @@ function generateQuotation(){
 }
 function showPrintOverlay(inner,fileNo){
   window._qfile=fileNo||'quotation';
+  window.scrollTo(0,0);
   document.getElementById('printArea').innerHTML='<div class="pa-toolbar"><button class="pa-share" onclick="doShare()"><i class="ti ti-share"></i> Share</button><button class="pa-print" onclick="doPrint()"><i class="ti ti-download"></i> Save PDF</button><button class="pa-close" onclick="closePrint()">✕</button></div><div class="pa-inner">'+inner+'</div>';
   var pa=document.getElementById('printArea');pa.classList.add('show');document.body.style.overflow='hidden';
+  pa.scrollTop=0;
 }
 function waitImages(el){
   var imgs=el?el.querySelectorAll('img'):[];
@@ -1240,8 +1242,9 @@ function waitImages(el){
   })(imgs[i]);}
   return Promise.all(proms).then(function(){return new Promise(function(r){setTimeout(r,150)})});
 }
-var PDFOPT={margin:[6,6,6,6],image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:'tr'}};
+var PDFOPT={margin:[6,6,6,6],image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',scrollX:0,scrollY:0,windowWidth:document.documentElement.scrollWidth,windowHeight:document.documentElement.scrollHeight},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy'],avoid:'tr'}};
 function doPrint(){
+  window.scrollTo(0,0);
   var el=document.querySelector('#printArea .q-doc')||document.querySelector('#printArea .pa-inner');
   var name=String(window._qfile||'quotation').replace(/[^A-Za-z0-9_-]/g,'-');
   if(!window.html2pdf||!el){window.print();return;}
@@ -1273,6 +1276,7 @@ function openPdfBlob(blob,name){
   }
 }
 function doShare(){
+  window.scrollTo(0,0);
   var el=document.querySelector('#printArea .q-doc')||document.querySelector('#printArea .pa-inner');
   var name=String(window._qfile||'quotation').replace(/[^A-Za-z0-9_-]/g,'-');
   if(!window.html2pdf||!el){flash('Share not available — use Save PDF');return;}
