@@ -1212,7 +1212,8 @@ function generateQuotation(){
   // bank + footer
   html+='<table class="q-bank"><tr><td class="lbl">Bank Name</td><td>'+esc(co('bank',''))+'</td></tr><tr><td class="lbl">Account Name</td><td>'+esc(co('acname',''))+'</td></tr><tr><td class="lbl">Account Number</td><td>'+esc(co('acno',''))+'</td></tr><tr><td class="lbl">IFSC Code</td><td>'+esc(co('ifsc',''))+'</td></tr></table>';
   html+='<div class="q-foot"><div></div><div style="text-align:right"><div style="font-weight:bold;font-size:12px">'+esc(co('genby','Cores Polyprint'))+'</div><div style="margin-top:24px;font-weight:bold;font-size:12px">Partner</div></div></div>';
-  html+='<img src="'+FOOTER_B64+'" style="width:100%;display:block;margin-top:10px" alt="">';
+  html+='<div style="border-top:6px solid #F4A81D;margin-top:10px"></div>';
+  html+='<img src="'+FOOTER_B64+'" style="width:100%;display:block" alt="">';
   html+='</div>';
 
   saveHistorySnapshot(b.no, fmtDate(b.date), b.name, html);
