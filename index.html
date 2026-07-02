@@ -7,6 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1565C0">
 <title>Pro Calculator Suite</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1565C0">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <script>/* html2pdf.js bundled offline */
@@ -1241,12 +1245,18 @@ function doPrint(){
   var name=String(window._qfile||'quotation').replace(/[^A-Za-z0-9_-]/g,'-');
   if(!window.html2pdf||!el){window.print();return;}
   var btn=document.querySelector('#printArea .pa-print');
+  var done=false;
   if(btn){btn.innerHTML='<i class="ti ti-loader"></i> Generating...';btn.disabled=true;}
-  function reset(){if(btn){btn.innerHTML='<i class="ti ti-download"></i> Save PDF';btn.disabled=false;}}
-  waitImages(el).then(function(){
-    html2pdf().set(Object.assign({filename:name+'.pdf'},PDFOPT)).from(el).save()
-      .then(reset).catch(function(){reset();try{window.print();}catch(e){}});
-  }).catch(function(){reset();try{window.print();}catch(e){}});
+  function reset(){done=true;if(btn){btn.innerHTML='<i class="ti ti-download"></i> Save PDF';btn.disabled=false;}}
+  var watchdog=setTimeout(function(){
+    if(!done){reset();flash('PDF ma vaar lagi rahi chhe — Chrome browser ma app kholi try karo');}
+  },15000);
+  try{
+    waitImages(el).then(function(){
+      html2pdf().set(Object.assign({filename:name+'.pdf'},PDFOPT)).from(el).save()
+        .then(function(){clearTimeout(watchdog);reset();}).catch(function(){clearTimeout(watchdog);reset();try{window.print();}catch(e){}});
+    }).catch(function(){clearTimeout(watchdog);reset();try{window.print();}catch(e){}});
+  }catch(e){clearTimeout(watchdog);reset();try{window.print();}catch(e){}}
 }
 function openPdfBlob(blob,name){
   try{
@@ -1266,24 +1276,31 @@ function doShare(){
   var name=String(window._qfile||'quotation').replace(/[^A-Za-z0-9_-]/g,'-');
   if(!window.html2pdf||!el){flash('Share not available — use Save PDF');return;}
   var btn=document.querySelector('#printArea .pa-share');
+  var done=false;
   if(btn){btn.innerHTML='<i class="ti ti-loader"></i> Preparing...';btn.disabled=true;}
-  function reset(){if(btn){btn.innerHTML='<i class="ti ti-share"></i> Share';btn.disabled=false;}}
-  waitImages(el).then(function(){
-    html2pdf().set(PDFOPT).from(el).toPdf().get('pdf').then(function(pdf){
-      var blob=pdf.output('blob');
-      var file=new File([blob],name+'.pdf',{type:'application/pdf'});
-      reset();
-      var canFiles=navigator.canShare?navigator.canShare({files:[file]}):!!navigator.share;
-      if(navigator.share&&canFiles){
-        navigator.share({files:[file],title:name,text:'Quotation '+name}).catch(function(err){
-          if(err&&err.name!=='AbortError'){openPdfBlob(blob,name);}
-        });
-      }else{
-        openPdfBlob(blob,name);
-        flash('Direct share aa device par nathi — PDF khulyu, uparthi browser na share thi WhatsApp/Gmail ma moklo');
-      }
-    }).catch(function(){reset();flash('PDF taiyar na thai shaki');});
-  }).catch(function(){reset();flash('PDF taiyar na thai shaki');});
+  function reset(){done=true;if(btn){btn.innerHTML='<i class="ti ti-share"></i> Share';btn.disabled=false;}}
+  var watchdog=setTimeout(function(){
+    if(!done){reset();flash('Share ma vaar lagi rahi chhe — Save PDF vaparo, ke Chrome browser ma app kholi try karo');}
+  },15000);
+  try{
+    waitImages(el).then(function(){
+      html2pdf().set(PDFOPT).from(el).toPdf().get('pdf').then(function(pdf){
+        clearTimeout(watchdog);
+        var blob=pdf.output('blob');
+        var file=new File([blob],name+'.pdf',{type:'application/pdf'});
+        reset();
+        var canFiles=navigator.canShare?navigator.canShare({files:[file]}):!!navigator.share;
+        if(navigator.share&&canFiles){
+          navigator.share({files:[file],title:name,text:'Quotation '+name}).catch(function(err){
+            if(err&&err.name!=='AbortError'){openPdfBlob(blob,name);}
+          });
+        }else{
+          openPdfBlob(blob,name);
+          flash('Direct share aa device par nathi — PDF khulyu, uparthi browser na share thi WhatsApp/Gmail ma moklo');
+        }
+      }).catch(function(){clearTimeout(watchdog);reset();flash('PDF taiyar na thai shaki — Save PDF try karo');});
+    }).catch(function(){clearTimeout(watchdog);reset();flash('PDF taiyar na thai shaki — Save PDF try karo');});
+  }catch(e){clearTimeout(watchdog);reset();flash('Share ma error aavi — Save PDF vaparo');}
 }
 function closePrint(){var pa=document.getElementById('printArea');pa.classList.remove('show');pa.innerHTML='';document.body.style.overflow=''}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -1292,6 +1309,11 @@ function fmtDate(d){if(!d)return '';var p=d.split('-');if(p.length===3){var mo=[
 /* default date = today */
 (function(){var t=new Date(),iso=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');var e=document.getElementById('q_date');if(e)e.value=iso})();
 loadSaved();loadHistory();renderQ();renderHistory();refreshQuoteNoField();
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
